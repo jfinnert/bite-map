@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:14-3.2
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bitemap_test
+    ports:
+      - "5433:5432"  # Use a different port to avoid conflicts with dev database
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/bitemap_test
+      - MAPBOX_TOKEN=${MAPBOX_TOKEN:-test_token}
+      - GOOGLE_KEY=${GOOGLE_KEY:-test_key}
+      - SECRET_KEY=${SECRET_KEY:-test_secret_key}
+      - DEBUG=True
+      - PYTHONPATH=/project
+    volumes:
+      - ./app:/project/app  # Mount code so tests use latest version
+      - ./tests:/project/tests  # Mount tests so they use latest version
+      - ./worker.py:/project/worker.py  # Mount worker
+      - ./ingest_test.py:/project/ingest_test.py  # Mount ingest script
+
+volumes:
+  postgres_test_data:

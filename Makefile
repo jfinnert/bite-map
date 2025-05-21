@@ -16,7 +16,15 @@ shell:
 
 # Run tests
 test:
-	docker-compose exec api pytest -v
+	docker-compose exec api pip install pytest pytest-mock
+	docker-compose exec -e PYTHONPATH=/app:/tests api pytest -xvs /tests
+
+# Run specific tests
+test-worker:
+	docker-compose exec -e PYTHONPATH=/app:/tests api pytest -xvs /tests/test_worker.py
+
+test-api:
+	docker-compose exec -e PYTHONPATH=/app:/tests api pytest -xvs /tests/api
 
 # Ingest a URL - usage: make ingest URL=https://www.youtube.com/watch?v=example
 ingest:
