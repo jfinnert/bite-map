@@ -1,0 +1,40 @@
+.place-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.place-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.place-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.place-card .address {
+  margin: 0 0 4px 0;
+  color: #444;
+  font-size: 14px;
+}
+
+.place-card .location {
+  margin: 0 0 8px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.place-card .review-count {
+  display: inline-block;
+  background-color: #f0f0f0;
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #555;
+}

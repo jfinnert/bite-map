@@ -1,14 +1,64 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Annotated
 from geoalchemy2.functions import ST_AsGeoJSON, ST_MakeEnvelope
+import json
 
+from ...core.auth import get_current_user
 from ...database import get_db
-from ...models import Place, Review
+from ...models import Place, Review, User
 from ...schemas.place import PlaceResponse, PlaceDetailResponse
 
 router = APIRouter()
+
+@router.get("/me/favorites", response_model=Dict[str, Any])
+async def get_my_favorites(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+):
+    """
+    Get the current user's favorite places.
+    This endpoint is protected and requires authentication.
+    """
+    # In a real implementation, this would use a user_favorites table
+    # For now, we'll just return a sample of places
+    
+    places = db.query(Place).order_by(func.random()).limit(5).all()
+    
+    # Convert places to GeoJSON features
+    features = []
+    for place in places:
+        # Get GeoJSON representation of the point geometry
+        geojson = db.scalar(ST_AsGeoJSON(place.location))
+        geometry = json.loads(geojson)
+        
+        # Create GeoJSON feature
+        feature = {
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": {
+                "id": place.id,
+                "name": place.name,
+                "address": place.address,
+                "slug": place.slug,
+                "city": place.city,
+                "state": place.state,
+                "country": place.country,
+                "favorited": True  # Since these are favorites
+            }
+        }
+        features.append(feature)
+    
+    # Return GeoJSON FeatureCollection
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "metadata": {
+            "total": len(features),
+            "user_id": current_user.id
+        }
+    }
 
 @router.get("", response_model=Dict[str, Any])
 async def get_places(

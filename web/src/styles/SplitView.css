@@ -1,0 +1,45 @@
+.split-view-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.map-panel {
+  height: 100%;
+  position: relative;
+  min-width: 20%;
+  transition: width 0.1s ease;
+}
+
+.list-panel {
+  height: 100%;
+  overflow-y: auto;
+  min-width: 20%;
+  background-color: #f8f8f8;
+  transition: width 0.1s ease;
+}
+
+.divider {
+  width: 10px;
+  height: 100%;
+  background-color: #e0e0e0;
+  cursor: col-resize;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  z-index: 10;
+}
+
+.divider[data-dragging="true"] {
+  background-color: #c0c0c0;
+}
+
+.divider-handle {
+  width: 4px;
+  height: 40px;
+  background-color: #888;
+  border-radius: 2px;
+}

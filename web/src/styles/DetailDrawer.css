@@ -1,0 +1,137 @@
+.drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.detail-drawer {
+  width: 400px;
+  max-width: 90%;
+  height: 100%;
+  background-color: white;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+  animation: slide-in 0.3s ease forwards;
+  position: relative;
+  overflow-y: auto;
+}
+
+.close-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.close-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.drawer-content {
+  padding: 24px;
+}
+
+.drawer-content h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+}
+
+.drawer-content .address {
+  margin: 0 0 4px 0;
+  color: #444;
+  font-size: 16px;
+}
+
+.drawer-content .location {
+  margin: 0 0 20px 0;
+  color: #666;
+  font-size: 16px;
+}
+
+.reviews-section {
+  margin-top: 24px;
+}
+
+.reviews-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.review-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.review-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: flex-start;
+}
+
+.review-content {
+  flex: 1;
+}
+
+.review-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.source-link {
+  display: inline-block;
+  background-color: #ff5a5f;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.thumbnail {
+  width: 80px;
+  height: 60px;
+  margin-left: 12px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loading, .error {
+  padding: 20px 0;
+  text-align: center;
+  color: #666;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

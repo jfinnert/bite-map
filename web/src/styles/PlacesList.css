@@ -1,0 +1,57 @@
+.places-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.places-header {
+  margin-bottom: 20px;
+}
+
+.places-header h2 {
+  margin: 0 0 12px 0;
+  font-size: 22px;
+}
+
+.search-bar {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px 0 0 4px;
+  font-size: 14px;
+}
+
+.search-bar button {
+  padding: 8px 16px;
+  background-color: #4a80f5;
+  color: white;
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+.places-count {
+  font-size: 14px;
+  color: #666;
+}
+
+.places-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.loading,
+.error,
+.empty {
+  text-align: center;
+  padding: 40px 0;
+  color: #666;
+}
