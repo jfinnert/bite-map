@@ -26,7 +26,7 @@ def test_ingest_endpoint():
     }
     
     # Mock the database session to avoid actual DB operations
-    with mock.patch("app.api.endpoints.ingest.get_db") as mock_get_db:
+    with mock.patch("api.endpoints.ingest.get_db") as mock_get_db:
         # Mock the session and query methods
         mock_session = mock.MagicMock()
         mock_get_db.return_value = mock_session
@@ -43,7 +43,7 @@ def test_ingest_endpoint():
         mock_session.refresh.side_effect = lambda x: setattr(x, 'id', 1)
         
         # Also mock the background tasks
-        with mock.patch("app.api.endpoints.ingest.BackgroundTasks") as mock_bg_tasks:
+        with mock.patch("api.endpoints.ingest.BackgroundTasks") as mock_bg_tasks:
             response = client.post(
                 "/api/ingest/link",
                 json=request_data

@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy application code
 COPY ./app /project/app
+# Only copy the root tests directory
 COPY ./tests /project/tests
 COPY ./worker.py /project/worker.py
 COPY ./ingest_test.py /project/ingest_test.py

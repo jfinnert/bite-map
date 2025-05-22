@@ -4,7 +4,7 @@ from sqlalchemy import func
 from geoalchemy2.functions import ST_DWithin, ST_Distance, ST_MakePoint
 from typing import Optional, List, Dict, Any
 
-from ..models import Place
+from models import Place
 
 
 def find_nearby_duplicate(db: Session, lat: float, lng: float, name: str = None, distance_meters: int = 100) -> Optional[Place]:

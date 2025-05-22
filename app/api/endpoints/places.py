@@ -5,10 +5,11 @@ from typing import List, Optional, Dict, Any, Annotated
 from geoalchemy2.functions import ST_AsGeoJSON, ST_MakeEnvelope
 import json
 
-from ...core.auth import get_current_user
-from ...database import get_db
-from ...models import Place, Review, User
-from ...schemas.place import PlaceResponse, PlaceDetailResponse
+# Use absolute imports instead of relative imports
+from core.auth import get_current_user
+from database import get_db
+from models import Place, Review, User
+from schemas.place import PlaceResponse, PlaceDetailResponse
 
 router = APIRouter()
 

@@ -13,13 +13,12 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from geoalchemy2.elements import WKTElement
 
-# Add the app directory to the Python path for imports
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.database import SessionLocal
-from app.models import Source, Place, Review
-from app.utils.nlp.place_extractor import extract_place
-from app.utils.geocoder import geocode
-from app.utils.place_utils import find_nearby_duplicate, format_place_slug
+# Use direct imports when working inside the app directory
+from database import SessionLocal
+from models import Source, Place, Review
+from utils.nlp.place_extractor import extract_place
+from utils.geocoder import geocode
+from utils.place_utils import find_nearby_duplicate, format_place_slug
 
 # Configure logging
 logging.basicConfig(
@@ -192,19 +191,26 @@ def parse_address(address: str) -> Dict[str, str]:
     # Very simple parsing - would need improvement in production
     address_parts = address.split(", ")
     
-    if len(address_parts) >= 3:
+    if len(address_parts) >= 1:
         # Last part usually contains country
         parts["country"] = address_parts[-1]
         
-        # Second to last usually has state/province and postal code
-        state_zip = address_parts[-2].split(" ")
-        if len(state_zip) >= 2:
+        # Handle addresses with at least state and country
+        if len(address_parts) >= 2:
+            # Second to last usually has state/province and possibly postal code
+            state_part = address_parts[-2]
+            state_zip = state_part.split(" ")
+            
+            # Set the state regardless of whether there's a postal code
             parts["state"] = state_zip[0]
-            parts["postal_code"] = " ".join(state_zip[1:])
-        
-        # Third to last usually has city
-        if len(address_parts) >= 3:
-            parts["city"] = address_parts[-3]
+            
+            # If there's more than just the state abbreviation, it may include a postal code
+            if len(state_zip) >= 2:
+                parts["postal_code"] = " ".join(state_zip[1:])
+            
+            # If we have city info (3+ parts in address)
+            if len(address_parts) >= 3:
+                parts["city"] = address_parts[-3]
     
     return parts
 

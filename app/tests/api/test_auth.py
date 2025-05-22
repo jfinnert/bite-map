@@ -11,7 +11,7 @@ from conftest import client
 
 def test_register_user():
     """Test user registration."""
-    with mock.patch("app.api.endpoints.auth.get_db") as mock_get_db:
+    with mock.patch("api.endpoints.auth.get_db") as mock_get_db:
         # Mock the database session
         mock_session = mock.MagicMock()
         mock_get_db.return_value = mock_session
@@ -30,7 +30,7 @@ def test_register_user():
         }
         
         # Mock password hashing
-        with mock.patch("app.api.endpoints.auth.get_password_hash") as mock_hash:
+        with mock.patch("api.endpoints.auth.get_password_hash") as mock_hash:
             mock_hash.return_value = "hashed_password"
             
             # Register user
@@ -53,7 +53,7 @@ def test_register_user():
 
 def test_login():
     """Test user login and token generation."""
-    with mock.patch("app.api.endpoints.auth.authenticate_user") as mock_auth:
+    with mock.patch("api.endpoints.auth.authenticate_user") as mock_auth:
         # Create mock user
         mock_user = mock.MagicMock()
         mock_user.username = "testuser"
@@ -62,7 +62,7 @@ def test_login():
         mock_auth.return_value = mock_user
         
         # Mock token creation
-        with mock.patch("app.api.endpoints.auth.create_access_token") as mock_create_token:
+        with mock.patch("api.endpoints.auth.create_access_token") as mock_create_token:
             mock_create_token.return_value = "test_access_token"
             
             # Attempt login
@@ -84,7 +84,7 @@ def test_login():
 
 def test_get_current_user():
     """Test retrieving the current authenticated user."""
-    with mock.patch("app.api.endpoints.auth.get_current_user") as mock_get_user:
+    with mock.patch("api.endpoints.auth.get_current_user") as mock_get_user:
         # Create mock user
         mock_user = mock.MagicMock()
         mock_user.id = 1

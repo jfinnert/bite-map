@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
 
+# Use direct import since app directory is in the Python path
 from api.router import api_router
 
 # Load environment variables

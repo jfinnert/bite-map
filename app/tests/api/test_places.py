@@ -10,7 +10,7 @@ from conftest import client
 
 def test_get_places_basic():
     """Test the basic places endpoint functionality."""
-    with mock.patch("app.api.endpoints.places.get_db") as mock_get_db:
+    with mock.patch("api.endpoints.places.get_db") as mock_get_db:
         # Mock the database session
         mock_session = mock.MagicMock()
         mock_get_db.return_value = mock_session
@@ -66,7 +66,7 @@ def test_get_places_basic():
 
 def test_get_place_by_id():
     """Test getting a single place by ID."""
-    with mock.patch("app.api.endpoints.places.get_db") as mock_get_db:
+    with mock.patch("api.endpoints.places.get_db") as mock_get_db:
         # Mock the database session
         mock_session = mock.MagicMock()
         mock_get_db.return_value = mock_session

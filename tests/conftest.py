@@ -1,26 +1,23 @@
+# filepath: /Users/josh/Python/3.7/Bite Map Project/bite-map/tests/conftest.py
 import os
 import sys
 import pytest
+from unittest import mock
 from fastapi.testclient import TestClient
 
-# Add the app directory to the Python path
-if os.path.exists('/app'):  # Running in Docker
-    sys.path.insert(0, '/app')
-else:  # Running locally
-    # Assuming the script is run from the project root
-    app_path = os.path.join(os.path.dirname(__file__), '../app')
-    sys.path.insert(0, os.path.abspath(app_path))
+# Add correct paths to Python path
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app_dir = os.path.join(project_dir, 'app')
+sys.path.insert(0, project_dir)
+sys.path.insert(0, app_dir)
 
-try:
-    from main import app
-    # Create a test client
-    client = TestClient(app)
-except ImportError as e:
-    print(f"Import error: {e}")
-    print(f"Current sys.path: {sys.path}")
-    raise
+# Import app - we do this here so the path setup happens first
+from main import app
+
+# Create a test client
+test_client = TestClient(app)
 
 @pytest.fixture
-def test_client():
-    """Return a TestClient instance for testing FastAPI routes."""
-    return client
+def client():
+    """Return the test client."""
+    return test_client

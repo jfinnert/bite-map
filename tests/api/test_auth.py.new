@@ -1,0 +1,168 @@
+# filepath: /Users/josh/Python/3.7/Bite Map Project/bite-map/tests/api/test_auth.py.new
+import pytest
+import os
+import sys
+from fastapi.testclient import TestClient
+from unittest import mock
+from fastapi import status
+from datetime import datetime
+
+# Add app path to make imports work
+project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+app_dir = os.path.join(project_dir, 'app')
+sys.path.insert(0, project_dir)
+sys.path.insert(0, app_dir)
+
+# Import app-specific modules
+from models import User
+from core.auth import get_password_hash, create_access_token
+
+# Import testing utilities
+from ..conftest import client, mock_db_session
+
+def test_register_user():
+    """Test user registration."""
+    # User data for registration
+    user_data = {
+        "username": "new_testuser",
+        "email": "new_test@example.com",
+        "full_name": "New Test User",
+        "password": "securepassword"
+    }
+
+    # First ensure no user with this username exists
+    for user in list(mock_db_session._data_store[User]):
+        if user.username == user_data["username"]:
+            mock_db_session._data_store[User].remove(user)
+    
+    # Mock password hashing to return a consistent value for testing
+    with mock.patch("core.auth.get_password_hash", return_value="hashed_password"):
+        # Register user
+        response = client.post(
+            "/api/auth/register",
+            json=user_data
+        )
+        
+        # Check response
+        assert response.status_code == status.HTTP_201_CREATED
+        result = response.json()
+        assert result["username"] == user_data["username"]
+        assert result["email"] == user_data["email"]
+        assert "password" not in result
+        
+        # Verify user was added to the database
+        mock_db_session.add.assert_called()
+        mock_db_session.commit.assert_called()
+        
+        # Check that the user is in our data store
+        found_user = False
+        for user in mock_db_session._data_store[User]:
+            if user.username == user_data["username"]:
+                found_user = True
+                break
+        assert found_user, "User was not added to the mock database"
+
+def test_register_duplicate_username():
+    """Test registering a user with a duplicate username."""
+    # User data for registration with existing username
+    user_data = {
+        "username": "testuser",  # Same as the default test user
+        "email": "another@example.com",
+        "full_name": "Another User",
+        "password": "securepassword"
+    }
+    
+    # Register user
+    response = client.post(
+        "/api/auth/register",
+        json=user_data
+    )
+    
+    # Check that registration fails
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    result = response.json()
+    assert "detail" in result
+    assert "Username already registered" in result["detail"]
+
+def test_login():
+    """Test user login and token generation."""
+    # Mock authenticate_user to succeed
+    with mock.patch("api.endpoints.auth.authenticate_user") as mock_auth:
+        # Configure mock auth to return our test user
+        test_user = User(
+            id=99,
+            username="login_testuser",
+            email="login@example.com",
+            full_name="Login Test User",
+            hashed_password="hashed_password",
+            is_active=True,
+            created_at=datetime.utcnow()
+        )
+        mock_auth.return_value = test_user
+        
+        # Mock token creation
+        with mock.patch("api.endpoints.auth.create_access_token") as mock_create_token:
+            mock_create_token.return_value = "test_access_token"
+            
+            # Attempt login
+            response = client.post(
+                "/api/auth/token",
+                data={
+                    "username": "login_testuser",
+                    "password": "password"
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+            
+            # Check response
+            assert response.status_code == status.HTTP_200_OK
+            result = response.json()
+            assert result["access_token"] == "test_access_token"
+            assert result["token_type"] == "bearer"
+
+def test_login_failure():
+    """Test login with invalid credentials."""
+    # Mock authenticate_user to fail
+    with mock.patch("api.endpoints.auth.authenticate_user", return_value=None):
+        # Attempt login with invalid credentials
+        response = client.post(
+            "/api/auth/token",
+            data={
+                "username": "nonexistent",
+                "password": "wrongpassword"
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+        
+        # Check response
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        result = response.json()
+        assert "detail" in result
+        assert "Incorrect username or password" in result["detail"]
+
+def test_get_current_user():
+    """Test retrieving the current authenticated user."""
+    # Mock get_current_user to return a user
+    with mock.patch("api.endpoints.auth.get_current_user") as mock_get_user:
+        test_user = User(
+            id=100,
+            username="current_testuser",
+            email="current@example.com",
+            full_name="Current Test User",
+            hashed_password="hashed_password",
+            is_active=True,
+            created_at=datetime.utcnow()
+        )
+        mock_get_user.return_value = test_user
+        
+        # Get current user
+        response = client.get(
+            "/api/auth/me",
+            headers={"Authorization": "Bearer test_token"}
+        )
+        
+        # Check response
+        assert response.status_code == status.HTTP_200_OK
+        result = response.json()
+        assert result["username"] == "current_testuser"
+        assert result["email"] == "current@example.com"

@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import Dict, Optional, List
 from pydantic import BaseModel, HttpUrl
 
-from ...database import get_db
-from ...models import Source, Review, Place
-from ...schemas.place import PlaceResponse, PlaceDetailResponse
+# Use absolute imports instead of relative imports
+from database import get_db
+from models import Source, Review, Place
+from schemas.place import PlaceResponse, PlaceDetailResponse
 import uuid
 import subprocess
 import sys

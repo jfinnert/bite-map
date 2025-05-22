@@ -30,8 +30,9 @@ class PlaceResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 class SourceResponse(BaseModel):
@@ -42,8 +43,9 @@ class SourceResponse(BaseModel):
     status: str
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 class ReviewResponse(BaseModel):
@@ -53,13 +55,15 @@ class ReviewResponse(BaseModel):
     thumbnail_url: Optional[HttpUrl] = None
     source: SourceResponse
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }
 
 
 class PlaceDetailResponse(PlaceResponse):
     """Schema for detailed place responses including reviews"""
     reviews: List[ReviewResponse] = []
     
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes": True
+    }

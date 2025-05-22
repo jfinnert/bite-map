@@ -2,8 +2,8 @@ import pytest
 from unittest import mock
 import json
 
-from app.utils.nlp.place_extractor import extract_place
-from app.utils.geocoder import geocode
+from utils.nlp.place_extractor import extract_place
+from utils.geocoder import geocode
 
 
 def test_extract_place():

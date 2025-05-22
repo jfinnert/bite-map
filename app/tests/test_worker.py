@@ -5,8 +5,7 @@ from unittest import mock
 import tempfile
 import json
 
-# Add the app directory to the Python path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Import worker functions directly
 from worker import process_queued_links, mock_extract_video_data, parse_address
 
 

@@ -16,15 +16,25 @@ shell:
 
 # Run tests
 test:
-	docker-compose exec api pip install pytest pytest-mock
-	docker-compose exec -e PYTHONPATH=/app:/tests api pytest -xvs /tests
+	docker-compose exec api pip install pytest pytest-mock python-slugify
+	docker-compose exec api bash -c "cd / && PYTHONPATH=/app pytest -xvs /tests"
+
+# Run tests in test environment (preferred way)
+test-in-container:
+	docker-compose -f docker-compose.test.yml exec test pytest -xvs tests/
+
+# Run tests from app tests directory (deprecated - will be removed)
+test-app:
+	@echo "WARNING: The app/tests directory is deprecated and will be removed"
+	docker-compose exec api pip install pytest pytest-mock python-slugify
+	docker-compose exec api bash -c "cd /app && PYTHONPATH=/app pytest -xvs /app/tests"
 
 # Run specific tests
 test-worker:
-	docker-compose exec -e PYTHONPATH=/app:/tests api pytest -xvs /tests/test_worker.py
+	docker-compose exec api bash -c "cd / && PYTHONPATH=/app pytest -xvs /tests/test_worker.py"
 
 test-api:
-	docker-compose exec -e PYTHONPATH=/app:/tests api pytest -xvs /tests/api
+	docker-compose exec api bash -c "cd / && PYTHONPATH=/app pytest -xvs /tests/api"
 
 # Ingest a URL - usage: make ingest URL=https://www.youtube.com/watch?v=example
 ingest:

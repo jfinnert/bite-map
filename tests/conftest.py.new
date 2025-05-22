@@ -1,0 +1,231 @@
+# filepath: /Users/josh/Python/3.7/Bite Map Project/bite-map/tests/conftest.py.new
+import os
+import sys
+import pytest
+from unittest import mock
+from fastapi.testclient import TestClient
+from datetime import datetime
+from typing import Dict, List, Any, Type, Optional, Callable, Union
+
+# Add correct paths to Python path
+project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+app_dir = os.path.join(project_dir, 'app')
+sys.path.insert(0, project_dir)
+sys.path.insert(0, app_dir)
+
+# Import models before we start mocking
+from models import User, Source, Place, Review
+from core.auth import get_password_hash
+
+class SQLAlchemyColumnMock:
+    """Mocks SQLAlchemy Column behavior for filter operations."""
+    def __init__(self, key):
+        self.key = key
+
+    def __eq__(self, other):
+        return ColumnCondition(self.key, "==", other)
+
+class ColumnCondition:
+    """Represents a column condition used in filtering."""
+    def __init__(self, key, op, value):
+        self.key = key
+        self.op = op
+        self.value = value
+
+    def evaluate(self, obj):
+        """Evaluate if an object satisfies this condition."""
+        if self.op == "==":
+            return getattr(obj, self.key, None) == self.value
+        elif self.op == "!=":
+            return getattr(obj, self.key, None) != self.value
+        elif self.op == "in":
+            return getattr(obj, self.key, None) in self.value
+        return False
+
+class ModelQuery:
+    """Class to handle model queries with filter and get operations."""
+    
+    def __init__(self, model, data_store):
+        self.model = model
+        self.data_store = data_store
+        self.filters = []
+        self._limit_val = None
+        self._offset_val = None
+        self._order_by_columns = []
+    
+    def filter(self, *criteria):
+        """Add filter criteria."""
+        self.filters.extend(criteria)
+        return self
+    
+    def filter_by(self, **kwargs):
+        """Filter by keyword arguments."""
+        for key, value in kwargs.items():
+            # Create a column condition for this filter
+            self.filters.append(ColumnCondition(key, "==", value))
+        return self
+    
+    def first(self):
+        """Get the first result."""
+        results = self._get_filtered_results()
+        if self._limit_val:
+            results = results[:self._limit_val]
+        return results[0] if results else None
+    
+    def all(self):
+        """Get all results."""
+        results = self._get_filtered_results()
+        if self._offset_val:
+            results = results[self._offset_val:]
+        if self._limit_val:
+            results = results[:self._limit_val]
+        return results
+    
+    def order_by(self, *args):
+        """Order the results."""
+        # We don't implement actual ordering for tests since order rarely matters
+        self._order_by_columns.extend(args)
+        return self
+    
+    def offset(self, offset):
+        """Apply offset to results."""
+        self._offset_val = offset
+        return self
+    
+    def limit(self, limit):
+        """Apply limit to results."""
+        self._limit_val = limit
+        return self
+    
+    def get(self, id_value):
+        """Get a specific record by ID."""
+        items = self.data_store.get(self.model, [])
+        for item in items:
+            if getattr(item, 'id', None) == id_value:
+                return item
+        return None
+    
+    def _get_filtered_results(self):
+        """Apply filters and return results."""
+        if not self.filters:
+            return self.data_store.get(self.model, [])
+        
+        results = self.data_store.get(self.model, [])
+        filtered_results = []
+        
+        for item in results:
+            include_item = True
+            for filter_cond in self.filters:
+                if isinstance(filter_cond, ColumnCondition):
+                    if not filter_cond.evaluate(item):
+                        include_item = False
+                        break
+                elif isinstance(filter_cond, tuple) and len(filter_cond) > 0:
+                    # Handle SQLAlchemy column conditions
+                    column_expr = filter_cond[0]
+                    if hasattr(column_expr, 'key') and hasattr(column_expr.key, 'name'):
+                        column_name = column_expr.key.name
+                        value = filter_cond[1] if len(filter_cond) > 1 else None
+                        obj_value = getattr(item, column_name, None)
+                        if obj_value != value:
+                            include_item = False
+                            break
+                elif callable(filter_cond):
+                    if not filter_cond(item):
+                        include_item = False
+                        break
+            
+            if include_item:
+                filtered_results.append(item)
+                
+        return filtered_results
+
+class MockDBSession(mock.MagicMock):
+    """Enhanced mock database session with better query handling."""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._query_models = {}
+        self._data_store = {
+            User: [],
+            Source: [],
+            Place: [],
+            Review: []
+        }
+        # Add test user
+        self._add_test_user()
+    
+    def _add_test_user(self):
+        """Add a test user to the database."""
+        test_user = User(
+            id=1,
+            username="testuser",
+            email="test@example.com",
+            full_name="Test User",
+            hashed_password=get_password_hash("password"),
+            is_active=True,
+            created_at=datetime.utcnow()
+        )
+        self._data_store[User].append(test_user)
+    
+    def query(self, model):
+        """Handle different model queries correctly."""
+        # Create a new query object each time to avoid filter pollution between queries
+        return ModelQuery(model, self._data_store)
+    
+    def add(self, instance):
+        """Add an instance to the database."""
+        if type(instance) in self._data_store:
+            # Set ID if not set
+            if not hasattr(instance, 'id') or instance.id is None:
+                instance.id = len(self._data_store[type(instance)]) + 1
+            
+            # Set created_at if applicable
+            if hasattr(instance, 'created_at') and instance.created_at is None:
+                instance.created_at = datetime.utcnow()
+                
+            self._data_store[type(instance)].append(instance)
+        return super().add(instance)
+    
+    def commit(self):
+        """Commit changes to the database."""
+        return super().commit()
+    
+    def refresh(self, instance):
+        """Refresh an instance from the database."""
+        # This is a no-op in the mock
+        return super().refresh(instance)
+
+# Create patched User class for tests
+for attr in dir(User):
+    if attr.startswith('__'):
+        continue
+    # Mock column attributes for filter operations
+    if hasattr(getattr(User, attr), 'key'):
+        setattr(User, attr, SQLAlchemyColumnMock(attr))
+
+# Create the mock session
+mock_db_session = MockDBSession()
+
+# Import the app and get_db after setting up the mocks
+from main import app
+from database import get_db
+
+# Create a test client
+client = TestClient(app)
+
+@pytest.fixture
+def test_client():
+    """Return a TestClient instance for testing FastAPI routes."""
+    return client
+
+# Setup database mock for all tests
+@pytest.fixture(autouse=True)
+def mock_db_dependency():
+    """Override database dependency with our mock."""
+    with mock.patch('database.get_db', return_value=mock_db_session):
+        with mock.patch('core.auth.get_db', return_value=mock_db_session):
+            with mock.patch('api.endpoints.auth.get_db', return_value=mock_db_session):
+                with mock.patch('api.endpoints.places.get_db', return_value=mock_db_session):
+                    with mock.patch('api.endpoints.ingest.get_db', return_value=mock_db_session):
+                        yield mock_db_session
