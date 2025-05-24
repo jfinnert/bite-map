@@ -1,0 +1,15 @@
+--- models.py	2025-05-23 10:00:00
++++ models.py	2025-05-23 10:15:00
+@@ -15,6 +15,13 @@
+     created_at = Column(DateTime(timezone=True), server_default=func.now())
+     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+ 
++    @classmethod
++    def get_by_username(cls, db, username):
++        """Get a user by username."""
++        return db.query(cls).filter(cls.username == username).first()
++        
++    # End User model
++
+ class Source(Base):
+     __tablename__ = "sources"

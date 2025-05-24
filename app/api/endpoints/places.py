@@ -6,12 +6,20 @@ from geoalchemy2.functions import ST_AsGeoJSON, ST_MakeEnvelope
 import json
 
 # Use absolute imports instead of relative imports
-from core.auth import get_current_user
-from database import get_db
-from models import Place, Review, User
-from schemas.place import PlaceResponse, PlaceDetailResponse
+from app.core.auth import get_current_user
+from app.database import get_db
+from app.models import Place, Review, User
+from app.schemas.place import PlaceResponse, PlaceDetailResponse
 
 router = APIRouter()
+
+def get_places(db: Session):
+    """Get a list of all places."""
+    return db.query(Place).all()
+    
+def get_place_by_slug(db: Session, slug: str):
+    """Get a place by its slug."""
+    return db.query(Place).filter(Place.slug == slug).first()
 
 @router.get("/me/favorites", response_model=Dict[str, Any])
 async def get_my_favorites(

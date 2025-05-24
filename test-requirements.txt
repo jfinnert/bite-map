@@ -1,3 +1,27 @@
+# Core testing dependencies
 pytest==8.3.5
 pytest-mock==3.10.0
+pytest-cov==4.1.0
+
+# HTTP and API testing dependencies
+httpx==0.26.0
+fastapi==0.108.0
+
+# Database dependencies
+sqlalchemy==2.0.23
+psycopg2-binary
+
+# Authentication and security
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.9 # Assuming this version is fine, or align if app/requirements.txt has a different one
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.3  # Added for passlib bcrypt backend
+
+# Utility packages
 python-slugify==8.0.4
+pydantic==2.6.0
+uvicorn==0.25.0
+geopy==2.4.1
+
+# External service dependencies 
+requests==2.31.0

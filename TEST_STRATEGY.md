@@ -1,11 +1,23 @@
 # Test Strategy for Bite Map
 
-## Current Status - May 21, 2025
+## Current Status - May 22, 2025
 
 ✅ **Test Consolidation Complete**: All tests have been moved to the `/tests/` directory  
 ✅ **API Tests Fixed**: Login endpoint test now passes  
 ✅ **Worker Tests Fixed**: Basic worker tests now pass  
-✅ **Deprecation Warnings Fixed**: Updated SQLAlchemy and Pydantic code Project
+✅ **Deprecation Warnings Fixed**: Updated SQLAlchemy and Pydantic code  
+✅ **Hybrid Testing Strategy**: Implemented both local SQLite and Docker PostgreSQL testing  
+✅ **Import Handling**: Added robust import resolution with `import_helper.py`  
+✅ **Database Fixtures**: Implemented SQLite database fixtures for fast local testing
+
+## Hybrid Testing Strategy
+
+The Bite Map project employs a **hybrid testing strategy** that offers the best of both worlds:
+
+1. **Local Development Testing**: Using SQLite for fast feedback cycles
+2. **Docker-based Production Testing**: Using PostgreSQL for production-like validation
+
+This approach maximizes developer productivity while ensuring compatibility with the production environment.
 
 ## Test Directory Organization
 
@@ -20,6 +32,8 @@ The test directory structure mirrors the application structure:
 ```
 tests/
 ├── conftest.py           # Test fixtures and configuration
+├── db_fixtures.py        # Database fixtures for testing
+├── import_helper.py      # Import resolution for flexible test environments
 ├── test_worker.py        # Tests for the worker.py in the project root
 ├── api/                  # Tests for API endpoints
 │   ├── test_auth.py
@@ -31,25 +45,79 @@ tests/
 
 ## Running Tests
 
-### Using Docker (Recommended)
+### Local Development Testing (Fast)
 
-To run all tests:
+For quick feedback during development, use SQLite-based local testing:
+
 ```bash
-make test-in-container
+# Run all tests locally with SQLite
+make test-local
+
+# Run specific test modules locally
+make test-local-worker
+make test-local-api
 ```
 
-To run specific test files:
+These commands use `run_tests.py` which:
+- Patches the database connection to use SQLite
+- Mocks hard-to-install dependencies
+- Provides flexible import paths
+
+### Docker-based Testing (Production-like)
+
+For production-like validation, use PostgreSQL in Docker containers:
+
 ```bash
-docker-compose -f docker-compose.test.yml exec test pytest -xvs tests/path/to/test_file.py
+# Run all tests in Docker container with PostgreSQL
+make test-docker
+
+# Run specific test modules in Docker
+make test-docker-worker
+make test-docker-api
 ```
 
-### Using Local Environment
+### Default Test Command
 
-To run tests in the local environment:
+For convenience, the default test command runs the faster local tests:
+
 ```bash
-cd /path/to/bite-map
-PYTHONPATH=. pytest -xvs tests/
+make test
 ```
+
+### CI Environment Testing
+
+For Continuous Integration environments, a specialized configuration is available:
+
+```bash
+make test-ci
+```
+
+## Test Utilities
+
+### Import Helper
+
+The `import_helper.py` provides utilities for handling imports in different environments:
+
+- `flexible_import(module_name)`: Import from either direct path or `app.` prefixed path
+- `get_module(name)`: Get a module by name, trying different path strategies
+- `patch_module_path(module_name)`: Decorator to ensure tests can import required modules
+
+### Database Fixtures
+
+The `db_fixtures.py` provides SQLite-based database fixtures for testing without PostgreSQL:
+
+- In-memory SQLite database for fast testing
+- Automatic schema creation
+- Test data provisioning
+
+## Writing New Tests
+
+When writing new tests:
+
+1. Place them in the appropriate directory under `/tests/`
+2. Use `import_helper.py` for flexible imports
+3. Use the database fixtures from `conftest.py` for database tests
+4. Verify tests pass in both local and Docker environments
 
 ## Mocking Strategy
 

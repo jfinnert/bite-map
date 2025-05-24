@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bite_map_app"
+version = "0.1.0"
+description = "Bite Map Application"
+readme = "README.md"
+requires-python = ">=3.7"
+# Add other dependencies from requirements.txt if needed for the package itself
+# For example:
+# dependencies = [
+#     "fastapi",
+#     "sqlalchemy",
+#     "psycopg2-binary",
+#     # etc.
+# ]
+
+[tool.setuptools.packages.find]
+where = ["."]  # search in the current directory
+include = ["app", "app.*"]  # Explicitly include only the 'app' package and its submodules

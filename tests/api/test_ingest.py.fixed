@@ -1,0 +1,61 @@
+import pytest
+import os
+import sys
+from fastapi import status
+from fastapi.testclient import TestClient
+from unittest import mock
+
+# Add app to sys path if needed
+project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+app_dir = os.path.join(project_dir, 'app')
+sys.path.insert(0, project_dir)
+sys.path.insert(0, app_dir)
+
+# Import app with error handling
+try:
+    from main import app
+except ImportError:
+    try:
+        from main import app
+    except ImportError:
+        print("WARNING: Could not import app. Tests may fail.")
+
+def get_test_client():
+    """Get a fresh test client for each test"""
+    return TestClient(app)
+
+def test_health_endpoint():
+    """Test the health check endpoint returns status ok."""
+    client = get_test_client()
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+def test_ingest_endpoint():
+    """Test the link ingestion endpoint."""
+    client = get_test_client()
+    
+    # Mock the database session for source creation
+    with mock.patch("api.endpoints.ingest.get_db") as mock_get_db:
+        # Create mock db session
+        mock_db = mock.MagicMock()
+        mock_get_db.return_value = mock_db
+        
+        # Mock Source class for object creation
+        with mock.patch("api.endpoints.ingest.Source") as mock_source_cls:
+            # Configure mock for successful source creation
+            mock_source = mock.MagicMock()
+            mock_source.id = 1
+            mock_source.url = "https://www.youtube.com/watch?v=test123"
+            mock_source.status = "queued"
+            mock_source_cls.return_value = mock_source
+            
+            # Test valid YouTube link
+            response = client.post(
+                "/api/ingest/link",  # The actual endpoint is /api/ingest/link
+                json={"url": "https://www.youtube.com/watch?v=test123"}
+            )
+            assert response.status_code == status.HTTP_201_CREATED, f"Expected 201 Created, got {response.status_code}"
+            data = response.json()
+            assert "status" in data
+            assert data["status"] == "queued" or "success" in data["status"]

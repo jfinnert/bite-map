@@ -6,16 +6,17 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 # Use absolute imports 
-from core.auth import (
+from app.core.auth import (
     authenticate_user, 
     create_access_token, 
     get_password_hash, 
     get_current_user, 
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from database import get_db
-from models import User
-from schemas.auth import Token, UserCreate, UserResponse
+from app.database import get_db
+from app.models import User
+print("User class id:", id(User), "from", __name__) # Diagnostic print
+from app.schemas.auth import Token, UserCreate, UserResponse
 
 router = APIRouter()
 
@@ -71,7 +72,6 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         username=user.username,
         email=user.email,
-        full_name=user.full_name,
         hashed_password=hashed_password,
     )
     

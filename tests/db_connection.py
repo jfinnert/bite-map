@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 # Add the app directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.database import engine
+from database import engine
 
 def test_database_connection():
     """Test that we can connect to the database."""

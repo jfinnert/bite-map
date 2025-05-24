@@ -4,6 +4,7 @@ import sys
 from unittest import mock
 import tempfile
 import json
+from slugify import slugify
 
 # Import worker functions directly
 from worker import process_queued_links, mock_extract_video_data, parse_address
@@ -47,7 +48,7 @@ def test_parse_address():
     assert "CA" in parts["state"]
 
 
-@pytest.mark.skip(reason="Missing slugify dependency")
+
 def test_process_queued_links():
     """Test the worker's process_queued_links function with mocked dependencies."""
     with mock.patch("worker.SessionLocal") as mock_session_local:

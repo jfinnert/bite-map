@@ -1,0 +1,42 @@
+# filepath: /Users/josh/Python/3.7/Bite Map Project/bite-map/app/database.py.patch
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Get database URL from environment, with fallback to SQLite for testing
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+
+# If we're in a test environment, use SQLite in-memory
+if os.getenv("TESTING", "False").lower() == "true":
+    DATABASE_URL = "sqlite:///:memory:"
+
+# PostgreSQL compatibility: correct the dialect name for PostgreSQL
+if DATABASE_URL.startswith('postgres:'):
+    DATABASE_URL = DATABASE_URL.replace('postgres:', 'postgresql:', 1)
+
+# Create engine with appropriate parameters
+if DATABASE_URL.startswith('sqlite'):
+    # SQLite requires connect_args for foreign key support and other features
+    engine = create_engine(
+        DATABASE_URL, connect_args={"check_same_thread": False}
+    )
+else:
+    # For PostgreSQL and other databases
+    engine = create_engine(DATABASE_URL)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Use the recommended import path in SQLAlchemy 2.0
+Base = declarative_base()
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

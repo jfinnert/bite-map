@@ -1,0 +1,158 @@
+import pytest
+from unittest import mock
+from fastapi import status
+from jose import jwt
+
+# Import our application
+from app.main import app
+from app.database import get_db
+from app.models import User
+from app.core.auth import (
+    get_password_hash,
+    SECRET_KEY,
+    ALGORITHM
+)
+
+def test_register_endpoint_success(client, test_db):
+    """Test successful user registration via the endpoint."""
+    # Prepare test data
+    user_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "testpassword",
+    }
+    
+    # Make the request
+    response = client.post("/api/auth/register", json=user_data)
+    
+    # Check the response
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert data["username"] == "testuser"
+    assert data["email"] == "test@example.com"
+    assert "id" in data
+    assert "password" not in data  # Password should not be returned
+    
+    # Verify user was actually stored in the test database
+    user = test_db.query(User).filter(User.username == "testuser").first()
+    assert user is not None
+    assert user.email == "test@example.com"
+    assert user.username == "testuser"
+
+def test_register_endpoint_duplicate_username(client, test_db):
+    """Test registration with existing username."""
+    # Create a user first
+    hashed_password = get_password_hash("testpassword")
+    user = User(
+        username="testuser",
+        email="test@example.com",
+        hashed_password=hashed_password,
+    )
+    test_db.add(user)
+    test_db.commit()
+    
+    # Try to register with same username
+    user_data = {
+        "username": "testuser",
+        "email": "another@example.com",
+        "password": "testpassword",
+    }
+    
+    # Make the request
+    response = client.post("/api/auth/register", json=user_data)
+    
+    # Check the response
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    # Check that the error is about duplicate username
+    assert "already registered" in response.json()["detail"].lower()
+
+def test_login_endpoint_success():
+    """Test successful login via the token endpoint."""
+    # Create mock user for authentication
+    mock_user = mock.MagicMock()
+    mock_user.username = "testuser"
+    
+    # Create a mock db session
+    mock_db = mock.MagicMock()
+    
+    # Override get_db to return our mock
+    def override_get_db():
+        return mock_db
+        
+    app.dependency_overrides[get_db] = override_get_db
+    
+    # Mock authentication and token creation
+    with mock.patch("app.api.endpoints.auth.authenticate_user", return_value=mock_user), \
+         mock.patch("app.api.endpoints.auth.create_access_token", return_value="test_token"):
+        
+        # Make login request
+        response = client.post(
+            "/api/auth/token",
+            data={"username": "testuser", "password": "password"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+    
+    # Clean up
+    del app.dependency_overrides[get_db]
+    
+    # Check response
+    assert response.status_code == 200, f"Expected 200 OK, got {response.status_code}"
+    data = response.json()
+    assert data["access_token"] == "test_token"
+    assert data["token_type"] == "bearer"
+
+def test_login_endpoint_failed_auth():
+    """Test login with invalid credentials."""
+    # Create a mock db session
+    mock_db = mock.MagicMock()
+    
+    # Override get_db to return our mock
+    def override_get_db():
+        return mock_db
+        
+    app.dependency_overrides[get_db] = override_get_db
+    
+    # Mock authentication to return None (failed auth)
+    with mock.patch("app.api.endpoints.auth.authenticate_user", return_value=None):
+        # Make login request
+        response = client.post(
+            "/api/auth/token",
+            data={"username": "testuser", "password": "wrongpassword"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        )
+    
+    # Clean up
+    del app.dependency_overrides[get_db]
+    
+    # Check response
+    assert response.status_code == 401, f"Expected 401 Unauthorized, got {response.status_code}"
+
+def test_get_current_user_endpoint():
+    """Test the /me endpoint to get current user info."""
+    from app.core.auth import get_current_user
+    
+    # Create mock user
+    mock_user = mock.MagicMock()
+    mock_user.id = 1
+    mock_user.username = "testuser"
+    mock_user.email = "test@example.com"
+    mock_user.is_active = True
+    mock_user.full_name = None
+    
+    # Override the get_current_user dependency
+    def override_get_current_user():
+        return mock_user
+        
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    
+    # Make request to /me endpoint
+    response = client.get("/api/auth/me")
+    
+    # Clean up
+    del app.dependency_overrides[get_current_user]
+    
+    # Check response
+    assert response.status_code == 200, f"Expected 200 OK, got {response.status_code}"
+    data = response.json()
+    assert data["username"] == "testuser"
+    assert data["is_active"] is True

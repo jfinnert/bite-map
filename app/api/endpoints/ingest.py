@@ -4,15 +4,38 @@ from typing import Dict, Optional, List
 from pydantic import BaseModel, HttpUrl
 
 # Use absolute imports instead of relative imports
-from database import get_db
-from models import Source, Review, Place
-from schemas.place import PlaceResponse, PlaceDetailResponse
+from app.database import get_db
+from app.models import Source, Review, Place
+from app.schemas.place import PlaceResponse, PlaceDetailResponse
 import uuid
 import subprocess
 import sys
 import os
 
 router = APIRouter()
+
+def add_source_link(db: Session, url: str, platform: str = "unknown"):
+    """
+    Add a new source link to the database.
+    
+    Args:
+        db: Database session
+        url: URL to add
+        platform: Platform type (youtube, tiktok, etc.)
+        
+    Returns:
+        The created Source object
+    """
+    source = Source(
+        url=url,
+        platform=platform,
+        status="queued"
+    )
+    
+    db.add(source)
+    db.commit()
+    db.refresh(source)
+    return source
 
 class LinkIngest(BaseModel):
     url: HttpUrl
