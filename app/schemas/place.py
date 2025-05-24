@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, HttpUrl
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
 
 
@@ -67,3 +67,14 @@ class PlaceDetailResponse(PlaceResponse):
     model_config = {
         "from_attributes": True
     }
+
+
+class PlaceListMeta(BaseModel):
+    """Pagination metadata for place list responses"""
+    next: Optional[int] = None
+
+
+class PlaceListResponse(BaseModel):
+    """Wrapper for paginated place list responses"""
+    items: List[PlaceResponse]
+    meta: PlaceListMeta

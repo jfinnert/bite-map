@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # filepath: /Users/josh/Python/3.7/Bite Map Project/bite-map/run_tests.py
 """
-Helper script to run tests with database patching and module mocking.
+Helper script to run tests with PostgreSQL testcontainers and module mocking.
 
-This allows tests to run without a real PostgreSQL database and with hard-to-install dependencies,
-supporting a hybrid testing approach where local development uses SQLite for speed and
-Docker-based testing uses PostgreSQL for production-like validation.
+This script runs tests using PostgreSQL testcontainers for production-like validation
+while providing fallback SQLite support for quick local development when PostgreSQL
+containers are not available.
 
 Usage:
     python run_tests.py [test_paths]
@@ -13,7 +13,7 @@ Usage:
 Options:
     --coverage: Run with coverage reporting
     --html: Generate HTML test report
-    --in-memory: Use in-memory SQLite database (even faster)
+    --sqlite: Fallback to SQLite for quick local development
 """
 
 import os
@@ -28,14 +28,15 @@ import shutil
 from pathlib import Path
 
 def setup_test_environment():
-    """Set up the test environment with database patching and module mocking."""
-    # Patch the DATABASE_URL before any imports happen
-    if not os.environ.get("DATABASE_URL"):
+    """Set up the test environment with PostgreSQL testcontainers by default."""
+    # Only set DATABASE_URL if not already set and --sqlite flag is used
+    if not os.environ.get("DATABASE_URL") and getattr(setup_test_environment, "use_sqlite", False):
         if getattr(setup_test_environment, "use_in_memory", False):
             os.environ["DATABASE_URL"] = "sqlite:///:memory:"
         else:
-            # Use file-based SQLite for more stability
+            # Use file-based SQLite for fallback
             os.environ["DATABASE_URL"] = "sqlite:///./test.db"
+        print("Using SQLite fallback for testing")
     
     # Set test environment variables
     os.environ["TESTING"] = "1"
@@ -112,27 +113,33 @@ def create_test_report(test_results):
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Run tests with database patching and module mocking.")
+    parser = argparse.ArgumentParser(description="Run tests with PostgreSQL testcontainers by default.")
     parser.add_argument('test_paths', nargs='*', default=["tests/"], 
                       help="Paths to test files or directories")
     parser.add_argument('--coverage', action='store_true', help="Run with coverage")
     parser.add_argument('--html', action='store_true', help="Generate HTML test report")
-    parser.add_argument('--in-memory', action='store_true', help="Use in-memory SQLite database")
+    parser.add_argument('--sqlite', action='store_true', help="Use SQLite for quick local development")
+    parser.add_argument('--in-memory', action='store_true', help="Use in-memory SQLite (requires --sqlite)")
     parser.add_argument('--report', action='store_true', help="Generate test report")
     return parser.parse_args()
 
 def main():
-    """Run the tests with patched environment."""
+    """Run the tests with PostgreSQL testcontainers by default."""
     args = parse_args()
     
-    # Set in-memory flag for setup_test_environment
-    if args.in_memory:
-        setup_test_environment.use_in_memory = True
+    # Set SQLite fallback flags for setup_test_environment
+    if args.sqlite:
+        setup_test_environment.use_sqlite = True
+        if args.in_memory:
+            setup_test_environment.use_in_memory = True
     
     # Set up test environment
     setup_test_environment()
     
-    print(f"Running tests with {os.environ['DATABASE_URL']} and mocked dependencies...")
+    if args.sqlite:
+        print(f"Running tests with SQLite fallback: {os.environ.get('DATABASE_URL', 'PostgreSQL testcontainers')}")
+    else:
+        print("Running tests with PostgreSQL testcontainers (default)")
     
     # Try to import pytest
     try:

@@ -120,3 +120,58 @@ def test_get_place_by_slug():
         
         response = client.get("/api/places/nonexistent-place")
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+import pytest
+from tests.factories import PlaceFactory
+
+@pytest.mark.timeout(1.0)  # More generous during development, tighten to 0.1s later
+def test_bbox_filters_rows(test_db, client):
+    # Seed 10 NYC, 10 SF, 5 global
+    for _ in range(10):
+        PlaceFactory.create_nyc(session=test_db)
+        PlaceFactory.create_sf(session=test_db)
+    for _ in range(5):
+        PlaceFactory(global_random=True, session=test_db)
+    test_db.commit()
+    # NYC bbox
+    bbox = "-74.25909,40.477399,-73.700272,40.916178"
+    resp = client.get(f"/api/places?bbox={bbox}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["items"]) <= 20  # default per_page
+    for place in data["items"]:
+        assert -74.25909 <= place["lng"] <= -73.700272
+        assert 40.477399 <= place["lat"] <= 40.916178
+
+@pytest.mark.timeout(1.0)  # More generous during development, tighten to 0.1s later
+def test_search_filters_rows(test_db, client):
+    PlaceFactory(session=test_db, name="Joe's Pizza")
+    PlaceFactory(session=test_db, name="Shake Shack")
+    PlaceFactory(session=test_db, name="Burger King")
+    test_db.commit()
+    resp = client.get("/api/places?q=pizza")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert any("pizza" in p["name"].lower() for p in data["items"])
+    assert all("pizza" in p["name"].lower() or "pizza" in p["slug"] for p in data["items"])
+
+@pytest.mark.timeout(1.0)  # More generous during development, tighten to 0.1s later
+def test_pagination_meta(test_db, client):
+    # Seed 30 places
+    for _ in range(30):
+        PlaceFactory.create_nyc(session=test_db)
+    test_db.commit()
+    # First page
+    resp1 = client.get("/api/places?per_page=20")
+    assert resp1.status_code == 200
+    data1 = resp1.json()
+    assert len(data1["items"]) == 20
+    next_id = data1["meta"]["next"]
+    # Second page
+    resp2 = client.get(f"/api/places?per_page=20&after_id={next_id}")
+    assert resp2.status_code == 200
+    data2 = resp2.json()
+    assert len(data2["items"]) <= 10
+    # No more pages
+    assert data2["meta"]["next"] is None
