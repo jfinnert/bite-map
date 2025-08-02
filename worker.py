@@ -3,7 +3,6 @@
 Worker script that processes queued links in the database.
 """
 import os
-import sys
 import time
 import json
 import logging
@@ -13,13 +12,12 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from geoalchemy2.elements import WKTElement
 
-# Add the app directory to the Python path for imports
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'app'))
-from database import SessionLocal
-from models import Source, Place, Review
-from utils.nlp.place_extractor import extract_place
-from utils.geocoder import geocode
-from utils.place_utils import find_nearby_duplicate, format_place_slug
+# Use absolute imports for application modules to avoid duplicate model definitions
+from app.database import SessionLocal
+from app.models import Source, Place, Review
+from app.utils.nlp.place_extractor import extract_place
+from app.utils.geocoder import geocode
+from app.utils.place_utils import find_nearby_duplicate, format_place_slug
 
 # Configure logging
 logging.basicConfig(
@@ -75,9 +73,9 @@ def process_queued_links():
                         
                         # Check for nearby duplicates
                         existing_place = find_nearby_duplicate(
-                            db, 
-                            geo_result["lat"], 
-                            geo_result["lng"], 
+                            db,
+                            geo_result["lat"],
+                            geo_result["lng"],
                             geo_result["name"]
                         )
                         
@@ -92,20 +90,16 @@ def process_queued_links():
                             
                             # Create WKT point from lat/lng
                             point_wkt = f"POINT({geo_result['lng']} {geo_result['lat']})"
-                            location = WKTElement(point_wkt, srid=4326)
-                            
-                            # Parse address components
+                            geometry = WKTElement(point_wkt, srid=4326)
+
+                            # Parse address components (unused without dedicated columns)
                             address_parts = parse_address(geo_result["address"])
-                            
+
                             new_place = Place(
                                 name=geo_result["name"],
                                 slug=slug,
                                 address=geo_result["address"],
-                                city=address_parts.get("city"),
-                                state=address_parts.get("state"),
-                                country=address_parts.get("country"),
-                                postal_code=address_parts.get("postal_code"),
-                                location=location
+                                geom=geometry,
                             )
                             
                             db.add(new_place)
@@ -115,10 +109,12 @@ def process_queued_links():
                         
                         # Create a review linking the source to the place
                         review = Review(
-                            source_id=link.id,
+                            user_id=getattr(link, "user_id", 1),
                             place_id=place_id,
-                            title=video_data.get("title"),
-                            thumbnail_url=video_data.get("thumbnail_url")
+                            rating=0,
+                            comment=video_data.get("title"),
+                            source_url=link.url,
+                            thumbnail_url=video_data.get("thumbnail_url"),
                         )
                         
                         db.add(review)

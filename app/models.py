@@ -1,4 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, UniqueConstraint, func, event, Text as AlchemyText # Use Text as AlchemyText to avoid conflict if user defines TEXT
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    ForeignKey,
+    DateTime,
+    UniqueConstraint,
+    func,
+    event,
+    Text as AlchemyText,  # Use Text as AlchemyText to avoid conflict if user defines TEXT
+)
 from sqlalchemy.orm import relationship, declarative_base, declared_attr, object_session
 from sqlalchemy.dialects.postgresql import TEXT # This is the one the user had
 import os
@@ -31,7 +42,10 @@ class Source(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     url = Column(String, unique=True, index=True)
-    description = Column(TEXT) # Using postgresql.TEXT
+    description = Column(TEXT)  # Using postgresql.TEXT
+    platform = Column(String, nullable=True)
+    status = Column(String, index=True, default="queued")
+    raw_data = Column(TEXT, nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())

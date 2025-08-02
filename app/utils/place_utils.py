@@ -4,7 +4,8 @@ from sqlalchemy import func
 from geoalchemy2.functions import ST_DWithin, ST_Distance, ST_MakePoint
 from typing import Optional, List, Dict, Any
 
-from models import Place
+# Use absolute import to avoid duplicate model definitions when used outside the package
+from app.models import Place
 
 
 def find_nearby_duplicate(db: Session, lat: float, lng: float, name: str = None, distance_meters: int = 100) -> Optional[Place]:
@@ -28,7 +29,7 @@ def find_nearby_duplicate(db: Session, lat: float, lng: float, name: str = None,
     # Query for nearby places
     query = db.query(Place).filter(
         ST_DWithin(
-            Place.location,
+            Place.geom,
             point,
             distance_meters  # Distance in meters
         )
@@ -54,7 +55,7 @@ def find_nearby_duplicate(db: Session, lat: float, lng: float, name: str = None,
     
     # If no name matches or no name provided, return the closest place
     closest_place = query.order_by(
-        ST_Distance(Place.location, point)
+        ST_Distance(Place.geom, point)
     ).first()
     
     return closest_place
